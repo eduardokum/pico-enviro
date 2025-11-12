@@ -4,7 +4,6 @@ from phew import logging
 from enviro.constants import I2C_ADDR_INA219
 from enviro.helpers import get_battery_percent
 
-
 def get_readings(i2c, address=I2C_ADDR_INA219):
     ina = adafruit_ina219.INA219(i2c, address)
     logging.info(f"  - LTR390 initialized")

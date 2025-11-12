@@ -1,7 +1,11 @@
 from enviro.constants import *
-import machine, math, os, time, utime, errno
+import machine, math, os, time, utime
 from phew import logging
 import config
+try:
+    import uerrno as errno
+except ImportError:
+    import errno
 
 BATTERY_CURVE = [
     (4.20, 100),
@@ -22,14 +26,6 @@ BATTERY_CURVE = [
     (3.30, 5),
     (3.00, 0),
 ]
-
-try:
-    import config  # fails to import (missing/corrupt) go into provisioning
-
-    VOLTAGE_CALIBRATION_FACTOR = config.voltage_calibration_factor
-except Exception as e:
-    VOLTAGE_CALIBRATION_FACTOR = 1.000
-
 
 # miscellany
 # ===========================================================================

@@ -378,6 +378,7 @@ def upload_readings(readings=None):
         for json in jsons:
             try:
                 file_name = json["file"]
+                del json["file"]
                 status = destination_module.upload_reading(json)
                 if status == UPLOAD_SUCCESS:
                     if file_name is not None:

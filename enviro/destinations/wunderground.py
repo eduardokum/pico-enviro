@@ -12,9 +12,7 @@ from enviro.helpers import (
 
 
 def log_destination():
-    logging.info(
-        f"> uploading cached readings to Weather Underground device: {config.wunderground_id}"
-    )
+    logging.info(f"> uploading cached readings to Weather Underground device: {config.wunderground_id}")
 
 
 def get_wunderground_timestamp(enviro_timestamp):
@@ -24,9 +22,7 @@ def get_wunderground_timestamp(enviro_timestamp):
     hour = enviro_timestamp[11:13]
     minute = enviro_timestamp[14:16]
     second = enviro_timestamp[17:19]
-    timestamp = (
-        year + "-" + month + "-" + day + "+" + hour + "%3A" + minute + "%3A" + second
-    )
+    timestamp = year + "-" + month + "-" + day + "+" + hour + "%3A" + minute + "%3A" + second
     return timestamp
 
 
@@ -58,27 +54,29 @@ def upload_reading(reading):
         humidity = min(readings["humidity"], 100)
         url += "&humidity=" + str(humidity)
 
+    # Humidity Max / Min / Avg (%)
+    if "humidity_max" in readings:
+        url += "&tempfmax=" + str(celcius_to_fahrenheit(readings["humidity_max"]))
+    if "humidity_min" in readings:
+        url += "&tempfmin=" + str(celcius_to_fahrenheit(readings["humidity_min"]))
+    if "humidity_avg" in readings:
+        url += "&tempavgf=" + str(celcius_to_fahrenheit(readings["humidity_avg"]))
+
     # Dew point (°C → °F)
     if "dewpoint" in readings:
         url += "&dewptf=" + str(celcius_to_fahrenheit(readings["dewpoint"]))
 
     # Pressure (hPa → inHg)
-    if "sea_level_pressure" in readings:
-        url += "&baromin=" + str(hpa_to_inches(readings["sea_level_pressure"]))
-    elif "pressure" in readings:
+    if "pressure" in readings:
         url += "&baromin=" + str(hpa_to_inches(readings["pressure"]))
 
     # Wind speed (m/s → mph)
     if "wind_speed" in readings:
-        url += "&windspeedmph=" + str(
-            metres_per_second_to_miles_per_hour(readings["wind_speed"])
-        )
+        url += "&windspeedmph=" + str(metres_per_second_to_miles_per_hour(readings["wind_speed"]))
 
     # Wind gust (m/s → mph)
     if "wind_gust" in readings:
-        url += "&windgustmph=" + str(
-            metres_per_second_to_miles_per_hour(readings["wind_gust"])
-        )
+        url += "&windgustmph=" + str(metres_per_second_to_miles_per_hour(readings["wind_gust"]))
 
     # Wind direction (°)
     if "wind_direction" in readings:

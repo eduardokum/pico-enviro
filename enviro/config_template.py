@@ -43,9 +43,3 @@ hass_discovery_triggered = False
 
 # weather specific settings
 wind_direction_offset = 0
-
-# Feature toggles
-enable_battery_voltage = False
-
-# voltage calibration
-voltage_calibration_factor = 1.000
