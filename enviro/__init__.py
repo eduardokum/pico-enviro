@@ -3,7 +3,7 @@ from machine import Pin
 
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
-from pimoroni_i2c import PimoroniI2C
+from pimoroni_i2c import PimoroniI2C # type: ignore
 from led_manager import LedManager
 import time
 import config
@@ -46,16 +46,17 @@ except Exception as e:
 
 if needs_provisioning:
     logging.info("> entering provisioning mode")
-    import enviro.provisioning
+    import sys
+    sys.exit()
+    # import enviro.provisioning
 
 
 # Start reading here
 # ===========================================================================
-import machine, sys, os, ujson
+import sys, os, ujson
 from machine import RTC, ADC
 import phew
-import math
-from pcf85063a import PCF85063A
+from pcf85063a import PCF85063A # type: ignore
 import enviro.config_defaults as config_defaults
 import enviro.helpers as helpers
 from wifi_manager import WifiManager
@@ -180,7 +181,7 @@ leds_manager.set_warning_state(rtc, WARN_LED_OFF)
 
 # returns the reason the board woke up from deep sleep
 def get_wake_reason():
-    import wakeup
+    import wakeup # type: ignore
 
     wake_reason = None
     if wakeup.get_gpio_state() & (1 << BUTTON_PIN):
@@ -217,6 +218,13 @@ def get_qwst_modules():
             import enviro.qwst_modules.ltr390 as ltr390
 
             modules.append({"name": "LTR390", "include": ltr390, "address": I2C_ADDR_LTR390})
+        except RuntimeError:
+            pass
+    if I2C_ADDR_INA219 in i2c_devices:  # LTR390
+        try:
+            import enviro.qwst_modules.ina219 as ina219
+
+            modules.append({"name": "INA219", "include": ina219, "address": I2C_ADDR_INA219})
         except RuntimeError:
             pass
     if I2C_ADDR_SCD41 in i2c_devices:  # SCD41
@@ -292,23 +300,8 @@ def normalize_payload(readings):
         "readings": readings, 
         "model": model, 
         "uid": helpers.uid(),
-        "battery_voltage": None,
-        "battery_percent": None,
     }
     # fmt: on
-
-    if config.enable_battery_voltage and not vbus_present:
-        try:
-            logging.debug(f"> geting battery voltage")
-            vbat_filtered = 0
-            while vbat_filtered < 3.0 or vbat_filtered > 4.3:
-                vbat_filtered = helpers.get_battery_voltage()
-                time.sleep(0.5)
-            payload["battery_voltage"] = vbat_filtered
-            payload["battery_percent"] = helpers.get_battery_percent(vbat_filtered)
-            logging.debug(f"> battery voltage: {payload['battery_voltage']}, percent: {payload['battery_percent']}")
-        except Exception as e:
-            logging.error("! unknown error to get battery voltage: {}".format(e))
 
     return payload
 
@@ -392,7 +385,6 @@ def upload_readings(readings=None):
                         logging.info(f"  - uploaded {file_name}")
                     else:
                         logging.info(f"  - uploaded readings on demand")
-
                 elif status == UPLOAD_RATE_LIMITED and file_name is not None:
                     # write out that we want to attempt a reupload
                     with open("reattempt_upload.txt", "w") as attemptfile:
@@ -427,10 +419,10 @@ def upload_readings(readings=None):
                     return False
 
                 if secondary_destination is not None:
-                    secondary_destination_module.log_destination()
-                    if secondary_destination_module.upload_reading(json) == UPLOAD_SUCCESS:
+                    secondary_destination_module.log_destination()  # type: ignore
+                    if secondary_destination_module.upload_reading(json) == UPLOAD_SUCCESS:  # type: ignore
                         if file_name is not None:
-                            logging.error(f"  - Secondary destination upload success for {filename}")
+                            logging.error(f"  - Secondary destination upload success for {file_name}")
                         else:
                             logging.error(f"  - Secondary destination uploaded readings on demand")
 

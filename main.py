@@ -18,7 +18,7 @@ while True:
             enviro.logging.info("> clock not set, synchronise from ntp server")
             if not enviro.sync_clock_from_ntp():
                 # falhou NTP → loga e dorme um ciclo em vez de travar
-                enviro.halt("! failed to synchronise clock")
+                enviro.logging.error("! failed to synchronise clock, continuing with unsynced time")
 
         # Add HASS Discovery command before taking new readings
         if (

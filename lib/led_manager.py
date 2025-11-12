@@ -2,7 +2,7 @@ from machine import Pin, PWM, Timer
 import time
 import math
 
-from pcf85063a import PCF85063A
+from pcf85063a import PCF85063A  # type: ignore
 from enviro.constants import (
     ACTIVITY_LED_PIN,
     WARN_LED_OFF,
@@ -42,7 +42,7 @@ class LedManager:
         value = self._gamma_correct(brightness)
         self.activity_pwm.duty_u16(value)
 
-    def pulse_activity(self, speed_hz=1):
+    def pulse_activity(self, speed_hz=1.0):
         """Put activity LED into pulsing mode."""
         self.activity_pulse_speed_hz = speed_hz
         self.activity_timer.deinit()

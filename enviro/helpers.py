@@ -1,11 +1,8 @@
 from enviro.constants import *
-import machine, math, os, time, utime
+import machine, math, os, time, utime, errno
 from phew import logging
 import config
 
-ADC_VOLT_CONVERSION = 3.3 / 65535  # fator de conversão ADC → volts
-ADC_CHANNEL = 3  # canal 3 = VSYS/3
-VOLTAGE_SAMPLES = 10  # quantidade de amostras para média
 BATTERY_CURVE = [
     (4.20, 100),
     (4.15, 95),
@@ -58,7 +55,7 @@ def timestamp(dt):
     hour = int(dt[11:13])
     minute = int(dt[14:16])
     second = int(dt[17:19])
-    return time.mktime((year, month, day, hour, minute, second, 0, 0))
+    return time.mktime((year, month, day, hour, minute, second, 0, 0)) # type: ignore
 
 
 def uk_bst():
@@ -326,30 +323,6 @@ def get_sea_level_pressure(observed_pressure, temperature_in_c, altitude_in_m):
         ** -5.257
     )
     return qnh
-
-
-def get_battery_voltage():
-    # Salva configuração do pino 29
-    old_pad = machine.mem32[0x4001C000 | (4 + (4 * 29))]
-
-    machine.mem32[0x4001C000 | (4 + (4 * 29))] = 128
-
-    battery_voltage = 0
-    for _ in range(VOLTAGE_SAMPLES):
-        battery_voltage += _read_vsys_voltage()
-        time.sleep_ms(20)
-
-    battery_voltage = round(battery_voltage / VOLTAGE_SAMPLES, 3)
-
-    # Restaura configuração do pino
-    machine.mem32[0x4001C000 | (4 + (4 * 29))] = old_pad
-
-    return battery_voltage
-
-
-def _read_vsys_voltage():
-    adc_Vsys = machine.ADC(ADC_CHANNEL)
-    return adc_Vsys.read_u16() * 3.0 * ADC_VOLT_CONVERSION * VOLTAGE_CALIBRATION_FACTOR
 
 
 def get_battery_percent(volts):

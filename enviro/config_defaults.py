@@ -63,8 +63,12 @@ def add_missing_config_settings():
     except AttributeError:
         warn_missing_config_setting("hass_discovery")
         config.hass_discovery = False
-        config.hass_discovery_triggered = False
 
+    try:
+        config.hass_discovery_triggered
+    except AttributeError:
+        warn_missing_config_setting("hass_discovery_triggered")
+        config.hass_discovery_triggered = False
 
 def warn_missing_config_setting(setting):
     logging.warn(f"> config setting '{setting}' missing, please add it to config.py")

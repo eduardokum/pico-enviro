@@ -1,5 +1,5 @@
 ﻿from enviro import logging, i2c_devices
-from enviro.constants import UPLOAD_SUCCESS, UPLOAD_FAILED, I2C_ADDR_LTR390
+from enviro.constants import UPLOAD_SUCCESS, UPLOAD_FAILED, I2C_ADDR_LTR390, I2C_ADDR_INA219
 from enviro.mqttsimple import MQTTClient
 import ujson
 import config
@@ -115,16 +115,6 @@ def hass_discovery(board_type):
         mqtt_client,
         "mdi:water-percent",
     )
-    mqtt_discovery(
-        "Battery Voltage",
-        "voltage",
-        "V",
-        "battery_voltage",
-        board_type,
-        mqtt_client,
-        "mdi:car-battery",
-    )
-    mqtt_discovery("Battery Percent", "battery", "%", "battery_percent", board_type, mqtt_client)
     mqtt_discovery("Wifi Signal", "signal_strength", "dBm", "wifi", board_type, mqtt_client)
 
     # Weather-only sensors
@@ -276,6 +266,20 @@ def hass_discovery(board_type):
             mqtt_client,
             "mdi:weather-sunny-alert",
         )
+
+    # Optional Voltage Sensor
+    if I2C_ADDR_INA219 in i2c_devices:
+        logging.info(f"  - HASS Discovered sensor INA219")
+        mqtt_discovery(
+            "Battery Voltage",
+            "voltage",
+            "V",
+            "readings.battery_voltage",
+            board_type,
+            mqtt_client,
+            "mdi:car-battery",
+        )
+        mqtt_discovery("Battery Percentage", "battery", "%", "readings.battery_percent", board_type, mqtt_client)
 
     logging.info(f"  - HASS Discovery package sent")
     mqtt_client.disconnect()
