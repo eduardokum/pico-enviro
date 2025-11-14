@@ -1,4 +1,4 @@
-﻿# enviro config file
+# enviro config file
 
 # you may edit this file by hand but if you enter provisioning mode
 # then the file will be automatically overwritten with new details
@@ -43,3 +43,6 @@ hass_discovery_triggered = False
 
 # weather specific settings
 wind_direction_offset = 0
+
+# devices i2c connecteds on qw/st ports
+i2c_devices_cached = [35, 81, 119]

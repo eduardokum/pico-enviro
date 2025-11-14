@@ -3,7 +3,7 @@ from time import sleep
 sleep(0.5)
 
 import enviro
-import os
+import ota_light as ota
 
 # Faz o startup normal UMA VEZ
 try:
@@ -13,12 +13,16 @@ except Exception as exc:
 
 while True:
     try:
+        enviro.leds_manager.pulse_activity(0.5)
         # garante que o relógio (RTC / NTP) está razoavelmente certo
         if not enviro.is_clock_set():
-            enviro.logging.info("> clock not set, synchronise from ntp server")
+            enviro.logging.debug("> clock not set, synchronise from ntp server")
             if not enviro.sync_clock_from_ntp():
                 # falhou NTP → loga e dorme um ciclo em vez de travar
                 enviro.logging.error("! failed to synchronise clock, continuing with unsynced time")
+        
+        # test if has a ota update
+        ota.check_and_update()
 
         # Add HASS Discovery command before taking new readings
         if (
@@ -46,15 +50,13 @@ while True:
 
                 if enviro.is_upload_needed():
                     if enviro.cached_upload_count() > 0:
-                        enviro.logging.info(f"> {enviro.cached_upload_count()} cache file(s) need uploading")
+                        enviro.logging.debug(f"> {enviro.cached_upload_count()} cache file(s) need uploading")
 
                     if not enviro.upload_readings():
                         enviro.halt("! reading upload failed")
                 else:
-                    enviro.logging.info(
-                        f"> {enviro.cached_upload_count()} cache file(s) not being uploaded. "
-                        f"Waiting until there are {enviro.config.upload_frequency} file(s)"
-                    )
+                    enviro.logging.debug(f"> {enviro.cached_upload_count()} cache file(s) not being uploaded. ")
+                    enviro.logging.debug(f"> Waiting until there are {enviro.config.upload_frequency} file(s)")
         else:
             enviro.logging.debug("> saving reading locally")
             enviro.save_reading(reading)

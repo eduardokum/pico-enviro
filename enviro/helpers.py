@@ -149,10 +149,10 @@ def update_config(var_name, new_value):
             for line in new_lines:
                 f.write(line)
 
-        logging.info(f"Variable '{var_name}' updated to {new_value_str}")
+        logging.info(f"variable '{var_name}' updated to {new_value_str}")
         return True
     except Exception as e:
-        logging.error(f"Error when updating variable '{var_name}'")
+        logging.warn(f"error when updating variable '{var_name}'")
         return False
 
 
@@ -337,3 +337,40 @@ def get_battery_percent(volts):
             ratio = (volts - v_low) / (v_high - v_low)
             return int(p_low + ratio * (p_high - p_low))
     return 0  # fallback (não deve ocorrer)
+
+
+def import_module_compat(fullname):
+    """
+    Minimal replacement for importlib.import_module on MicroPython.
+    Returns the *submodule* for dotted names.
+    """
+    try:
+        # the fromlist trick makes __import__ return the last component
+        return __import__(fullname, None, None, ('*',))
+    except Exception as e:
+        raise ImportError("cannot import '{}' ({})".format(fullname, e))
+    
+
+def _i2c_signature(addresses):
+    try:
+        addrs = list(addresses)
+    except TypeError:
+        addrs = addresses or []
+    addrs = sorted(int(a) for a in addrs)
+    return ",".join("{:02x}".format(a) for a in addrs)
+
+
+def check_i2c_and_flag_discovery(found_devices):
+    """If I2C device set changed, update config cache and reset HASS discovery flag."""
+    try:
+        current_sig = _i2c_signature(found_devices)
+        cached = getattr(config, "i2c_devices_cached", [])
+        cached_sig = _i2c_signature(cached)
+
+        if current_sig != cached_sig:
+            logging.info(f"> I2C change detected: {cached_sig} -> {current_sig}")
+            # persiste a lista (como ints) e força novo discovery
+            update_config("i2c_devices_cached", sorted(int(a) for a in found_devices))
+            update_config("hass_discovery_triggered", False)
+    except Exception as e:
+        logging.error(f"! failed to update I2C cache / discovery flag: {e}")

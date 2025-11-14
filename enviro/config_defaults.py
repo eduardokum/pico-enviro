@@ -64,6 +64,12 @@ def add_missing_config_settings():
         warn_missing_config_setting("wind_direction_offset")
         config.wind_direction_offset = 0.0
 
+    try:
+        config.i2c_devices_cached
+    except AttributeError:
+        warn_missing_config_setting("i2c_devices_cached")
+        config.i2c_devices_cached = [35, 81, 119]
+
 
 def warn_missing_config_setting(setting):
     logging.warn(f"> config setting '{setting}' missing, please add it to config.py")

@@ -2,19 +2,18 @@
 import os, ujson, uhashlib, machine, time, network
 from phew import logging
 import enviro
+from enviro.version import __version__
 import urequests
 
 MANIFEST_URL = (
     "https://raw.githubusercontent.com/eduardokum/enviro/main/releases/manifest.json"
 )
-WORK_DIR = "/ota"
-BUFFER_SIZE = 1024
-LAST_CHECK_FILE = "/ota/last_check.txt"
+LAST_CHECK_FILE = "ota.txt"
 CHECK_INTERVAL_HOURS = 24  # check for OTA updates every 24 hours
 
 
 def _wifi_connected():
-    if not enviro.connect_to_wifi():
+    if not enviro.wifi_manager.connect():
         return False
     return True
 
@@ -22,16 +21,22 @@ def _wifi_connected():
 def _https_get(url):
     """Perform an HTTPS GET using urequests (built-in SSL)."""
     if not _wifi_connected():
-        logging.error("  OTA - Wi-Fi is not connected — cannot fetch {}".format(url))
+        logging.error("! OTA - Wi-Fi is not connected — cannot fetch {}".format(url))
         return None
 
     try:
         r = urequests.get(url)
+        status = getattr(r, "status_code", 200)
+        if status != 200:
+            logging.error("! OTA HTTP {} while fetching {}".format(status, url))
+            r.close()
+            return None
+        
         data = r.content
         r.close()
         return data
     except Exception as e:
-        logging.error("  - OTA Failed to fetch {}: {}".format(url, e))
+        logging.error("! OTA Failed to fetch {}: {}".format(url, e))
         return None
 
 
@@ -73,39 +78,39 @@ def _read_file(path):
         return None
 
 
-def check_and_update(current_version="0.0.0"):
+def check_and_update():
     try:
         """Check if should try the OTA"""
         last_ts = _read_last_check()
         now = _rtc_timestamp()
         hours = (now - last_ts) / 3600.0 if last_ts else CHECK_INTERVAL_HOURS + 1
         if hours < CHECK_INTERVAL_HOURS:
-            logging.info("> OTA - Skipped — last check was too recent.")
+            logging.debug("> OTA - Skipped — last check was too recent.")
             return False
 
         if not _wifi_connected():
             logging.error("! OTA Cannot check for update — Wi-Fi not connected.")
             return False
 
-        logging.info("> OTA initializing")
-        logging.info("  - OTA Checking firmware version...")
+        logging.debug("> OTA initializing")
+        logging.debug("  - OTA Checking firmware version...")
 
         mraw = _https_get(MANIFEST_URL)
         if not mraw:
-            logging.error("  - OTA Failed to download manifest file.")
+            logging.error("! OTA Failed to download manifest file.")
             return False
 
         try:
             manifest = ujson.loads(mraw)
         except Exception as e:
-            logging.error("  - OTA Invalid manifest JSON: {}".format(e))
+            logging.error("! OTA Invalid manifest JSON: {}".format(e))
             return False
 
         new_version = manifest.get("version")
 
-        if new_version == current_version:
+        if new_version == __version__:
             _write_last_check(now)
-            logging.info("  - OTA Firmware already up to date.")
+            logging.debug("  - OTA Firmware already up to date.")
             return False
 
         logging.info("  - OTA New firmware version available: {}".format(new_version))
@@ -116,23 +121,23 @@ def check_and_update(current_version="0.0.0"):
 
             local = _read_file(path)
             if local and _sha256(local) == expected:
+                # Local file already matches expected hash
                 continue
 
-            logging.info("  - OTA Updating file: {}".format(path))
+            logging.debug("  - OTA Updating file: {}".format(path))
             data = _https_get(url)
-            if not data:
-                logging.error("  - OTA Failed to download file: {}".format(path))
+
+            if data is None:
+                logging.error("! OTA Failed to download file: {}".format(path))
                 continue
 
             checksum = _sha256(data)
             if checksum != expected:
-                logging.warn(
-                    "  - OTA Invalid hash for file: {}, skipping.".format(path)
-                )
+                logging.warn("  - OTA Invalid hash for file: {}, skipping.".format(path))
                 continue
 
             _safe_write(path, data)
-            logging.info("  - OTA File updated successfully: {}".format(path))
+            logging.debug("  - OTA File updated successfully: {}".format(path))
 
         logging.info("  - OTA Firmware update applied successfully")
         _safe_write("enviro/version.py", f'__version__ = "{new_version}"\n')
@@ -157,11 +162,11 @@ def check_and_update(current_version="0.0.0"):
                 for line in new_lines:
                     f.write(line)
 
-            logging.info("  - OTA hass_discovery_triggered updated to False")
+            logging.debug("  - OTA hass_discovery_triggered updated to False")
         except:
             pass
 
-        logging.info("  - OTA rebooting...")
+        logging.debug("  - OTA rebooting...")
 
         time.sleep(2)
         machine.reset()
@@ -170,7 +175,7 @@ def check_and_update(current_version="0.0.0"):
         logging.error("! OTA - failed:", e)
 
 
-def ensure_dir(path):
+def _ensure_dir(path):
     """Create directories recursively (MicroPython compatible)."""
     parts = path.split("/")
     current = ""
@@ -195,7 +200,6 @@ def _read_last_check():
 
 def _write_last_check(ts):
     """Write timestamp of last OTA check."""
-    ensure_dir("/ota")
     with open(LAST_CHECK_FILE, "w") as f:
         f.write(str(ts))
 

@@ -64,10 +64,10 @@ def load_daily_stats():
             if data.get("date") == today:
                 base.update(data)
             else:
-                logging.info("> New day detected — resetting daily stats.")
+                logging.debug("> new day detected — resetting daily stats.")
                 save_daily_stats(base)
         except Exception as e:
-            logging.error(f"! Failed to read {DAILY_STATS_FILE}: {e}")
+            logging.error(f"! failed to read {DAILY_STATS_FILE}: {e}")
             save_daily_stats(base)
     else:
         save_daily_stats(base)
@@ -117,7 +117,7 @@ def save_daily_stats_if_needed(force=False):
 
 
 def startup(reason):
-    logging.info(f"> starting weather")
+    logging.debug(f"> starting weather")
     global last_rain_trigger
 
     try:
@@ -149,7 +149,7 @@ def check_trigger():
         time.sleep(0.05)
         leds_manager.set_activity_led(0)
 
-        logging.info(f"> add new rain trigger at {helpers.datetime_string()}")
+        logging.debug(f"> add new rain trigger at {helpers.datetime_string()}")
         log_rain()
 
     last_rain_trigger = rain_sensor_trigger
@@ -183,7 +183,7 @@ def log_rain():
         save_daily_stats_if_needed(force=True)
         _last_rain_flush_ms = now
 
-    logging.info(f"> Rain tick recorded ({data['rain_total_mm']} mm total)")
+    logging.debug(f"> rain tick recorded ({data['rain_total_mm']} mm total)")
 
 
 # ================================================================
@@ -194,7 +194,7 @@ def log_rain():
 def wind_speed(sample_time_ms=1000):
     """Measure current wind speed in m/s."""
     state = wind_speed_pin.value()
-    first = last = None
+    first = last = 0
     transitions = 0
     start = time.ticks_ms()
 

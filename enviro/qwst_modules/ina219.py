@@ -6,7 +6,7 @@ from enviro.helpers import get_battery_percent
 
 def get_readings(i2c, address=I2C_ADDR_INA219):
     ina = adafruit_ina219.INA219(i2c, address)
-    logging.info(f"  - LTR390 initialized")
+    logging.debug(f"  - INA219 initialized")
     volts = ina.bus_voltage
     readings = OrderedDict(
         {
@@ -14,5 +14,5 @@ def get_readings(i2c, address=I2C_ADDR_INA219):
             "battery_percent": get_battery_percent(volts)
         }
     )
-    logging.debug(f"> battery voltage: {readings['battery_voltage']}, percent: {readings['battery_percent']}")
+    logging.debug(f"  - battery voltage: {readings['battery_voltage']}, percent: {readings['battery_percent']}")
     return readings

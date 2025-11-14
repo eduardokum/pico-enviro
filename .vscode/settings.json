@@ -2,5 +2,15 @@
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
   "editor.detectIndentation": false,
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingModuleSource": "none"
+  },
+  "python.terminal.activateEnvironment": false,
+  "micropico.openOnStart": true,
+  "python.analysis.typeshedPaths": ["~/.micropico-stubs/included"],
+  "python.analysis.extraPaths": ["~/.micropico-stubs/included", "lib"],
+  "micropico.pyIgnore": ["**/documentation.md"]
 }

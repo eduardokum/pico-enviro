@@ -18,6 +18,6 @@ def get_readings(i2c, address, seconds_since_last):
 
     for reading in readings:
         name_and_value = reading + " : " + str(readings[reading])
-        logging.info(f"  - {name_and_value}")
+        logging.debug(f"  - {name_and_value}")
 
     return readings

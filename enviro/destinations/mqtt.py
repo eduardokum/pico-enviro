@@ -1,4 +1,5 @@
-﻿from enviro import logging, i2c_devices
+from enviro import i2c_devices
+from phew import logging
 from enviro.constants import UPLOAD_SUCCESS, UPLOAD_FAILED, I2C_ADDR_LTR390, I2C_ADDR_INA219
 from enviro.mqttsimple import MQTTClient
 import ujson
@@ -6,7 +7,7 @@ import config
 
 
 def log_destination():
-    logging.info(f"> uploading cached readings to MQTT broker: {config.mqtt_broker_address}")
+    logging.debug(f"> uploading cached readings to MQTT broker: {config.mqtt_broker_address}")
 
 
 def upload_reading(reading, mqtt_client=None):
@@ -73,7 +74,7 @@ def upload_reading(reading, mqtt_client=None):
     return UPLOAD_FAILED
 
 
-def hass_discovery(board_type):
+def hass_discovery(board_type="weather"):
     logging.debug(f"> HASS Discovery initialized")
     try:
         server = config.mqtt_broker_address
@@ -82,9 +83,9 @@ def hass_discovery(board_type):
         nickname = config.nickname
         mqtt_client = MQTTClient(nickname, server, user=username, password=password, keepalive=60)
         mqtt_client.connect()
-        logging.info(f"  - connected to mqtt broker")
+        logging.debug(f"  - connected to mqtt broker")
     except:
-        logging.error(f"  - an exception try to connect to mqtt to send HASS Discovery")
+        logging.error(f"! an exception try to connect to mqtt to send HASS Discovery")
         return
 
     # Core sensors common to weather
@@ -283,7 +284,7 @@ def hass_discovery(board_type):
 
     logging.info(f"  - HASS Discovery package sent")
     mqtt_client.disconnect()
-    logging.info(f"  - disconnected from mqtt broker")
+    logging.debug(f"  - disconnected from mqtt broker")
 
 
 def mqtt_discovery(name, device_class, unit, value_name, model, mqtt_client, icon=None):
@@ -321,5 +322,5 @@ def mqtt_discovery(name, device_class, unit, value_name, model, mqtt_client, ico
         return UPLOAD_SUCCESS
     except:
         logging.error(
-            f"  - an exception occurred when sending HASS Discovery homeassistant/sensor/{nickname}/{sensor_name}/config"
+            f"! an exception occurred when sending HASS Discovery homeassistant/sensor/{nickname}/{sensor_name}/config"
         )

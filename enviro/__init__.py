@@ -9,6 +9,8 @@ import time
 import config
 from phew import logging
 
+logging.disable_logging_types(logging.LOG_DEBUG | logging.LOG_INFO | logging.LOG_WARNING)
+
 i2c = PimoroniI2C(I2C_SDA_PIN, I2C_SCL_PIN, 100000)
 i2c_devices = i2c.scan()
 
@@ -41,7 +43,7 @@ try:
     if not config.provisioned:  # provisioned flag not set go into provisioning
         needs_provisioning = True
 except Exception as e:
-    logging.error("> missing or corrupt config.py", e)
+    logging.error("! missing or corrupt config.py", e)
     needs_provisioning = True
 
 if needs_provisioning:
@@ -134,7 +136,7 @@ def is_clock_set():
                 if seconds_since_sync < (config.resync_frequency * 60 * 60):
                     return True
 
-                logging.info(f"  - rtc has not been synched for {config.resync_frequency} hour(s)")
+                logging.debug(f"  - rtc has not been synched for {config.resync_frequency} hour(s)")
             except AttributeError:
                 return True
 
@@ -257,12 +259,12 @@ def get_sensor_readings():
                 break
 
         seconds_since_last = now - last
-        logging.info(f"  - seconds since last reading: {seconds_since_last}")
+        logging.debug(f"  - seconds since last reading: {seconds_since_last}")
 
     readings = get_board().get_sensor_readings(seconds_since_last, vbus_present)
     # append qw/st module readings to payload
     for module in get_qwst_modules():
-        logging.info(f"> getting readings from module: {module['name']}")
+        logging.debug(f"> getting readings from module: {module['name']}")
         readings = readings | module["include"].get_readings(i2c, module["address"])
 
     # write out the last time log
@@ -339,7 +341,7 @@ def is_upload_needed():
 # upload the readings to a destination
 def upload_readings(readings=None):
     if not wifi_manager.connect():
-        logging.error(f"  - cannot upload readings, wifi connection failed")
+        logging.error(f"! cannot upload readings, wifi connection failed")
         return False
 
     destination = config.destination
@@ -351,14 +353,25 @@ def upload_readings(readings=None):
 
     try:
         exec(f"import enviro.destinations.{destination}")
-        destination_module = sys.modules[f"enviro.destinations.{destination}"]
+
+        try:
+            destination_module = helpers.import_module_compat(f"enviro.destinations.{destination}")
+        except Exception as e:
+            logging.error(f"! cannot import destination {destination}: {e}")
+            wifi_manager.disconnect()
+            return False
+
         secondary_destination_module = None
-
         if secondary_destination in valid_secondary_destinations and secondary_destination != destination:
-            exec(f"import enviro.destinations.{secondary_destination}")
-            secondary_destination_module = sys.modules[f"enviro.destinations.{secondary_destination}"]
+            try:
+                secondary_destination_module = helpers.import_module_compat(f"enviro.destinations.{secondary_destination}")
+            except Exception as e:
+                logging.error(f"! cannot import secondary destination {secondary_destination}: {e}")
 
-        destination_module.log_destination()
+        if hasattr(destination_module, "log_destination"):
+            destination_module.log_destination()
+        else:
+            logging.debug(f"> destination: {destination}")
 
         jsons = []
 
@@ -379,19 +392,23 @@ def upload_readings(readings=None):
             try:
                 file_name = json["file"]
                 del json["file"]
+                if not hasattr(destination_module, "upload_reading"):
+                    logging.error(f"! destination {destination} missing upload_reading()")
+                    wifi_manager.disconnect()
+                    return False
                 status = destination_module.upload_reading(json)
                 if status == UPLOAD_SUCCESS:
                     if file_name is not None:
                         os.remove(f"uploads/{file_name}")
-                        logging.info(f"  - uploaded {file_name}")
+                        logging.debug(f"  - uploaded {file_name}")
                     else:
-                        logging.info(f"  - uploaded readings on demand")
+                        logging.debug(f"  - uploaded readings on demand")
                 elif status == UPLOAD_RATE_LIMITED and file_name is not None:
                     # write out that we want to attempt a reupload
                     with open("reattempt_upload.txt", "w") as attemptfile:
                         attemptfile.write("")
 
-                    logging.info(f"  - cannot upload '{file_name}' - rate limited")
+                    logging.warn(f"  - cannot upload '{file_name}' - rate limited")
                     sleep(1)
                 elif status == UPLOAD_LOST_SYNC and file_name is not None:
                     # remove the sync time file to trigger a resync on next boot
@@ -402,7 +419,7 @@ def upload_readings(readings=None):
                     with open("reattempt_upload.txt", "w") as attemptfile:
                         attemptfile.write("")
 
-                    logging.info(f"  - cannot upload '{file_name}' - rtc has become out of sync")
+                    logging.warn(f"  - cannot upload '{file_name}' - rtc has become out of sync")
                     sleep(1)
                 elif status == UPLOAD_SKIP_FILE:
                     if file_name is not None:
@@ -419,21 +436,23 @@ def upload_readings(readings=None):
                         logging.error(f"  ! cannot push reading to {destination}")
                     return False
 
-                if secondary_destination is not None:
-                    secondary_destination_module.log_destination()  # type: ignore
+                if secondary_destination_module is not None:
+                    if hasattr(secondary_destination_module, "log_destination"):
+                        secondary_destination_module.log_destination()
+                    else:
+                        logging.debug(f"> destination: {secondary_destination}")
+                        
                     if secondary_destination_module.upload_reading(json) == UPLOAD_SUCCESS:  # type: ignore
                         if file_name is not None:
-                            logging.error(f"  - Secondary destination upload success for {file_name}")
+                            logging.debug(f"  - Secondary destination upload success for {file_name}")
                         else:
-                            logging.error(f"  - Secondary destination uploaded readings on demand")
+                            logging.debug(f"  - Secondary destination uploaded readings on demand")
 
             except Exception as e:
                 if file_name is not None:
-                    logging.error(
-                        "  ! exception when upload readings '{}' to {}, exp: {}".format(file_name, destination, e)
-                    )
+                    logging.error("! exception when upload readings '{}' to {}, exp: {}".format(file_name, destination, e))
                 else:
-                    logging.error("  ! exception when uploadings to {}, exp: {}".format(destination, e))
+                    logging.error("! exception when uploadings to {}, exp: {}".format(destination, e))
 
     except ImportError:
         logging.error(f"! cannot find destination {destination}")
@@ -469,8 +488,10 @@ def startup():
     import sys
 
     # write startup info into log file
-    logging.info("> performing startup")
+    logging.debug("> performing startup")
     logging.debug(f"  - running Enviro {ENVIRO_VERSION}, {sys.version.split('; ')[1]}")
+
+    helpers.check_i2c_and_flag_discovery(i2c_devices)
 
     # get the reason we were woken up
     reason = get_wake_reason()
@@ -487,11 +508,10 @@ def startup():
             sleep()
 
     # log the wake reason
-    logging.info("  - wake reason:", wake_reason_name(reason))
+    logging.debug("  - wake reason:", wake_reason_name(reason))
 
     # also immediately turn on the LED to indicate that we're doing something
     logging.debug("  - turn on activity led")
-    leds_manager.pulse_activity(0.5)
 
     # see if we were woken to attempt a reupload
     if helpers.file_exists("reattempt_upload.txt"):
@@ -500,7 +520,7 @@ def startup():
             os.remove("reattempt_upload.txt")
             return
 
-        logging.info(f"> {upload_count} cache file(s) still to upload")
+        logging.debug(f"> {upload_count} cache file(s) still to upload")
         if not upload_readings():
             halt("! reading upload failed")
 
@@ -511,77 +531,6 @@ def startup():
         # Note, this *may* result in a missed reading
         if reason == WAKE_REASON_RTC_ALARM:
             sleep()
-
-
-# def sleep(time_override=None):
-#     if time_override is not None:
-#         logging.info(f"> going to sleep for {time_override} minute(s)")
-#     else:
-#         logging.info("> going to sleep")
-
-#     # make sure the rtc flags are cleared before going back to sleep
-#     logging.debug("  - clearing and disabling previous alarm")
-#     rtc.clear_timer_flag()  # TODO this was removed from 0.0.8
-#     rtc.clear_alarm_flag()
-
-#     # set alarm to wake us up for next reading
-#     dt = rtc.datetime()
-#     hour, minute, second = dt[3:6]
-
-#     # calculate how many minutes into the day we are
-#     if time_override is not None:
-#         minute += time_override
-#     else:
-#         # if the time is very close to the end of the minute, advance to the next minute
-#         # this aims to fix the edge case where the board goes to sleep right as the RTC triggers, thus never waking up
-#         if second > 55:
-#             minute += 1
-#         minute = math.floor(minute / config.reading_frequency) * config.reading_frequency
-#         minute += config.reading_frequency
-
-#     while minute >= 60:
-#         minute -= 60
-#         hour += 1
-#     if hour >= 24:
-#         hour -= 24
-#     ampm = "am" if hour < 12 else "pm"
-
-#     logging.info(f"  - setting alarm to wake at {hour:02}:{minute:02}{ampm}")
-
-#     # sleep until next scheduled reading
-#     rtc.set_alarm(0, minute, hour)
-#     rtc.enable_alarm_interrupt(True)
-
-#     # disable the vsys hold, causing us to turn off
-#     logging.info("  - shutting down")
-#     hold_vsys_en_pin.init(Pin.IN)
-
-#     # if we're still awake it means power is coming from the USB port in which
-#     # case we can't (and don't need to) sleep.
-#     leds_manager.stop_activity()
-
-#     # if running via mpremote/pyboard.py with a remote mount then we can't
-#     # reset the board so just exist
-#     if phew.remote_mount:
-#         sys.exit()
-
-#     # we'll wait here until the rtc timer triggers and then reset the board
-#     logging.debug("  - on usb power (so can't shutdown). Halt and wait for alarm or user reset instead")
-#     board = get_board()
-#     while not rtc.read_alarm_flag():
-#         if hasattr(board, "check_trigger"):
-#             board.check_trigger()
-
-#         # time.sleep(0.25)
-
-#         if button_pin.value():  # allow button to force reset
-#             break
-
-#     logging.debug("  - reset")
-
-#     # reset the board
-#     machine.reset()
-
 
 # finishs the program
 def sleep(time_override=None):
@@ -599,10 +548,10 @@ def sleep(time_override=None):
 
     if time_override is not None:
         minutes = time_override
-        logging.info(f"> going to sleep for {minutes} minute(s)")
+        logging.debug(f"> going to sleep for {minutes} minute(s)")
     else:
         minutes = config.reading_frequency
-        logging.info(f"> going to sleep for {minutes} minute(s)")
+        logging.debug(f"> going to sleep for {minutes} minute(s)")
 
     total_seconds = int(minutes * 60)
 
@@ -620,11 +569,11 @@ def sleep(time_override=None):
             try:
                 board.check_trigger()
             except Exception as exc:
-                logging.error(f"  ! error in board.check_trigger: {exc}")
+                logging.error(f"! error in board.check_trigger: {exc}")
 
         # botão pode interromper o sleep (por ex. pra reconfigurar)
         if button_pin.value():
-            logging.info("  - sleep interrupted by button press")
+            logging.debug("  - sleep interrupted by button press")
             break
 
         time.sleep(step)

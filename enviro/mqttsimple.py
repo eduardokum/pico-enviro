@@ -1,4 +1,6 @@
-﻿import usocket as socket
+# pyright: reportMissingImports=false, reportOptionalMemberAccess=false, reportAttributeAccessIssue=warning
+
+import usocket as socket
 import ustruct as struct
 from ubinascii import hexlify
 
@@ -14,7 +16,7 @@ class MQTTClient:
         server,
         port=0,
         user=None,
-        password=None,
+        password="",
         keepalive=0,
         ssl=False,
         ssl_params={},
@@ -26,14 +28,14 @@ class MQTTClient:
         self.server = server
         self.port = port
         self.ssl = ssl
-        self.ssl_params = ssl_params
+        self.ssl_params = {} if ssl_params is None else ssl_params
         self.pid = 0
         self.cb = None
         self.user = user
         self.pswd = password
         self.keepalive = keepalive
         self.lw_topic = None
-        self.lw_msg = None
+        self.lw_msg = ""
         self.lw_qos = 0
         self.lw_retain = False
 
@@ -73,7 +75,7 @@ class MQTTClient:
             import ussl
 
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
-            self.sock.settimeout(10)
+            self.sock.settimeout(10) # type: ignore
         premsg = bytearray(b"\x10\0\0\0\0\0")
         msg = bytearray(b"\x04MQTT\x04\x02\0\0")
 
@@ -98,7 +100,7 @@ class MQTTClient:
             i += 1
         premsg[i] = sz
 
-        self.sock.write(premsg, i + 2)
+        self.sock.write(premsg[:i+2])
         self.sock.write(msg)
         # print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
@@ -134,14 +136,15 @@ class MQTTClient:
             sz >>= 7
             i += 1
         pkt[i] = sz
+        
         # print(hex(len(pkt)), hexlify(pkt, ":"))
-        self.sock.write(pkt, i + 1)
+        self.sock.write(pkt[:i+1])
         self._send_str(topic)
         if qos > 0:
             self.pid += 1
             pid = self.pid
             struct.pack_into("!H", pkt, 0, pid)
-            self.sock.write(pkt, 2)
+            self.sock.write(pkt[:2])
         self.sock.write(msg)
         if qos == 1:
             while 1:
@@ -197,14 +200,14 @@ class MQTTClient:
         topic_len = self.sock.read(2)
         topic_len = (topic_len[0] << 8) | topic_len[1]
         topic = self.sock.read(topic_len)
-        sz -= topic_len + 2
+        sz -= topic_len + 2 # type: ignore
         if op & 6:
             pid = self.sock.read(2)
             pid = pid[0] << 8 | pid[1]
             sz -= 2
         msg = self.sock.read(sz)
-        self.cb(topic, msg)
-        if op & 6 == 2:
+        self.cb(topic, msg) # type: ignore
+        if (op & 6) == 2:
             pkt = bytearray(b"\x40\x02\0\0")
             struct.pack_into("!H", pkt, 2, pid)
             self.sock.write(pkt)

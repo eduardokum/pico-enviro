@@ -12,7 +12,7 @@ from enviro.helpers import (
 
 
 def log_destination():
-    logging.info(f"> uploading cached readings to Weather Underground device: {config.wunderground_id}")
+    logging.debug(f"> uploading cached readings to Weather Underground device: {config.wunderground_id}")
 
 
 def get_wunderground_timestamp(enviro_timestamp):

@@ -5,7 +5,7 @@ from phew import logging
 
 def get_readings(i2c, address):
     uv_sensor = adafruit_ltr390.LTR390(i2c)
-    logging.info(f"  - LTR390 initialized")
+    logging.debug(f"  - LTR390 initialized")
     uv = uv_sensor.read_uvs()
     readings = OrderedDict(
         {
@@ -14,7 +14,7 @@ def get_readings(i2c, address):
             "uv_index": uv / 2300.0,
         }
     )
-    logging.info(
+    logging.debug(
         f"  - uv readings - uv: {readings['uv_raw']}, als: {readings['als_raw']}, uv index: {readings['uv_index']}"
     )
     return readings
