@@ -12,5 +12,5 @@
   "micropico.openOnStart": true,
   "python.analysis.typeshedPaths": ["~/.micropico-stubs/included"],
   "python.analysis.extraPaths": ["~/.micropico-stubs/included", "lib"],
-  "micropico.pyIgnore": ["**/documentation.md"]
+  "micropico.pyIgnore": ["**/documentation.md", "/tools", "/releases"]
 }

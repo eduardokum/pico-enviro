@@ -1,0 +1,95 @@
+{
+  "version": "1.3.13",
+  "files": [
+    {
+      "path": "/main.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/main.py",
+      "sha256": "5896387412d669d88c02f85aa8fcc1ca55eeb99b78ba6198397d3b7f155af9d8"
+    },
+    {
+      "path": "/enviro/helpers.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/helpers.py",
+      "sha256": "4d692a9ea7348c48571019d8d716132ac448f60b8adc80351e3af5ac8c45dad0"
+    },
+    {
+      "path": "/enviro/config_defaults.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/config_defaults.py",
+      "sha256": "8d72ffd8b3321ba13213e78c79769cc7b54acf49489ed6c602aa67b74b786d6a"
+    },
+    {
+      "path": "/enviro/config_template.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/config_template.py",
+      "sha256": "06b981a2f9b2e47d79bfcd4c4fc1487977249d36dc5158127072f823b2e61e98"
+    },
+    {
+      "path": "/enviro/constants.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/constants.py",
+      "sha256": "d9d2585d377f6de8e45827f4b599565b33629e088dc0d2bb9b920890e39472a8"
+    },
+    {
+      "path": "/enviro/mqttsimple.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/mqttsimple.py",
+      "sha256": "ba61ff8e4d9c069badff73e37c4c5a19d7f272ee7755e96341d7eda47900f0f6"
+    },
+    {
+      "path": "/enviro/__init__.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/__init__.py",
+      "sha256": "d3d71aa2420b96645eb05c48fe971f6ccb5c9d36d377758dd302574062e6efd7"
+    },
+    {
+      "path": "/enviro/destinations/mqtt.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/destinations/mqtt.py",
+      "sha256": "e68af627698efa45221d876d96afbd572c915c4d9d3fe4f9179a49f928b961aa"
+    },
+    {
+      "path": "/enviro/destinations/wunderground.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/destinations/wunderground.py",
+      "sha256": "7b9e3b73f3ad544f40abc3c4cf22ab792537cc38e90a73f1e9134eb1c8c27168"
+    },
+    {
+      "path": "/enviro/boards/weather.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/boards/weather.py",
+      "sha256": "409e9e8525d37b0b0da49981c57b903f33e153b5da1d393f0a7447c37f8eb217"
+    },
+    {
+      "path": "/enviro/qwst_modules/ltr390.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/qwst_modules/ltr390.py",
+      "sha256": "316731a8b0d0919b5086bdbb115ef77831d3e82e067e71131db74ddcb4d057f2"
+    },
+    {
+      "path": "/enviro/qwst_modules/bme688.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/qwst_modules/bme688.py",
+      "sha256": "b75902b484809754dc2386cd75f0e1388c2cb2e87e43ec946935d5bcf1be95a2"
+    },
+    {
+      "path": "/enviro/qwst_modules/scd41.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/qwst_modules/scd41.py",
+      "sha256": "dcaf7d888a08f83abab62fea2ce23338e18833880ac7720181b512da7687e05b"
+    },
+    {
+      "path": "/enviro/qwst_modules/ina219.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/enviro/qwst_modules/ina219.py",
+      "sha256": "f1c079f81ae0e7e17beb50a4e8ebed1838c2cf12c8f3b5ddd2ab68a5dedfad7e"
+    },
+    {
+      "path": "/lib/led_manager.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/lib/led_manager.py",
+      "sha256": "c21706d8378a4c267b1dbdf05dbfcd745bacdcba49f32241d3a1a29eb42a3bff"
+    },
+    {
+      "path": "/lib/adafruit_ina219.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/lib/adafruit_ina219.py",
+      "sha256": "994826e2deb47dc42512d7da0e79f4204c119f8838aaf7ceb71c8e95374ac1d4"
+    },
+    {
+      "path": "/lib/adafruit_ltr390.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/lib/adafruit_ltr390.py",
+      "sha256": "a2cc80e50e3db7b0c7d007e3d0d5f2bbf24e4fea7568551e1e699f3e847bcaa6"
+    },
+    {
+      "path": "/lib/wifi_manager.py",
+      "url": "https://raw.githubusercontent.com/eduardokum/enviro/main/lib/wifi_manager.py",
+      "sha256": "59105ae7bbd58bad666c1e4e5f9d09c7bd65d62871855b047e85e56dbab3da7d"
+    }
+  ]
+}
